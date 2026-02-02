@@ -13,32 +13,32 @@ from os.path import join
 
 
 def ESP_predicton(substrate_list, enzyme_list):
-	    #creating input matrices for all substrates:
-	    print("Step 1/3: Calculating numerical representations for all metabolites.")
-	    df_met = metabolite_preprocessing(metabolite_list = substrate_list)
+	#creating input matrices for all substrates:
+	print("Step 1/3: Calculating numerical representations for all metabolites.")
+	df_met = metabolite_preprocessing(metabolite_list = substrate_list)
 
-	    print("Step 2/3: Calculating numerical representations for all enzymes.")
-	    enzyme_list = ["" if pd.isnull(value) else value for value in enzyme_list]
-	    df_enzyme = calcualte_esm1b_ts_vectors(enzyme_list = enzyme_list)
+	print("Step 2/3: Calculating numerical representations for all enzymes.")
+	enzyme_list = ["" if pd.isnull(value) else value for value in enzyme_list]
+	df_enzyme = calcualte_esm1b_ts_vectors(enzyme_list = enzyme_list)
 
-	    print("Step 3/3: Making predictions for ESP.")
-	    #Merging the Metabolite and the enzyme DataFrame:
-	    df_ES = pd.DataFrame(data = {"substrate" : substrate_list, "enzyme" : enzyme_list, "index" : list(range(len(substrate_list)))})
-	    df_ES = merging_metabolite_and_enzyme_df(df_met, df_enzyme, df_ES)
-	    df_ES_valid, df_ES_invalid = df_ES.loc[df_ES["complete"]], df_ES.loc[~df_ES["complete"]]
-	    df_ES_valid.reset_index(inplace = True, drop = True)
+	print("Step 3/3: Making predictions for ESP.")
+	#Merging the Metabolite and the enzyme DataFrame:
+	df_ES = pd.DataFrame(data = {"substrate" : substrate_list, "enzyme" : enzyme_list, "index" : list(range(len(substrate_list)))})
+	df_ES = merging_metabolite_and_enzyme_df(df_met, df_enzyme, df_ES)
+	df_ES_valid, df_ES_invalid = df_ES.loc[df_ES["complete"]], df_ES.loc[~df_ES["complete"]]
+	df_ES_valid.reset_index(inplace = True, drop = True)
 
-	    #Making predictions
-	    if len(df_ES_valid) > 0:
-		    X = calculate_xgb_input_matrix(df = df_ES_valid)
-		    ESs = predict_ES(X)
-		    df_ES_valid["Prediction"] = ESs
+	#Making predictions
+	if len(df_ES_valid) > 0:
+		X = calculate_xgb_input_matrix(df = df_ES_valid)
+		ESs = predict_ES(X)
+		df_ES_valid["Prediction"] = ESs
 
-	    df_ES = pd.concat([df_ES_valid, df_ES_invalid], ignore_index = True)
-	    df_ES = df_ES.sort_values(by = ["index"])
-	    df_ES.drop(columns = ["index"], inplace = True)
-	    df_ES.reset_index(inplace = True, drop = True)
-	    return(df_ES)
+	df_ES = pd.concat([df_ES_valid, df_ES_invalid], ignore_index = True)
+	df_ES = df_ES.sort_values(by = ["index"])
+	df_ES.drop(columns = ["index"], inplace = True)
+	df_ES.reset_index(inplace = True, drop = True)
+	return(df_ES)
 
 
 
@@ -79,11 +79,12 @@ def predict_ES(X):
 
 def calculate_xgb_input_matrix(df):
 	ESM1b = np.array(list(df["enzyme rep"]))
-	fingerprints = ();
+	fingerprints = ()
 
 	for ind in df.index:
 		ecfp = np.array(df["GNN FP"][ind])
-		fingerprints = fingerprints +(ecfp, );
+		fingerprints = fingerprints +(ecfp, )
+
 	fingerprints = np.array(fingerprints)
 
 	print(fingerprints.shape, ESM1b.shape)

@@ -11,7 +11,8 @@ import os
 from os.path import join
 import torch
 import torch.nn as nn
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -42,8 +43,9 @@ def metabolite_preprocessing(metabolite_list):
         else:
             df_met["type"][ind] = "invalid"
             print(".......Metabolite string '%s' could be neither classified as a valid KEGG ID, InChI string or SMILES string" % met)
+
     df_met = calculate_atom_and_bond_feature_vectors(df_met)
-    N_max = maximal_number_of_atoms(df_met = df_met)
+    # N_max = maximal_number_of_atoms(df_met = df_met)
     df_met = calculate_input_matrices(df_met = df_met, N_max = 70)
     df_met = get_substrate_representations(df = df_met, N_max = 70)
     shutil.rmtree(join("..", "data", "temp_met"))
