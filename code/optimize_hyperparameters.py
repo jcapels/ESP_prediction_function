@@ -14,6 +14,7 @@ def prepare_dataset(df, ids, random_seed=None, proteins=True):
     if random_seed != None:
         val_dataset = val_dataset.sample(frac=1, random_state=random_seed).reset_index(drop=True)
     
+    print(val_dataset.shape)
     X = calculate_xgb_input_matrix(val_dataset)
     y = np.array(val_dataset["Binding"]) 
     return X, y
@@ -50,9 +51,9 @@ def train_model(X, y, seed, param):
 import pickle
 def train_and_report_loss_compounds(param):
 
-    dataset = pd.read_pickle("dataset_no_stereo.pkl")
+    dataset = pd.read_pickle("dataset.pkl")
 
-    with open("./splits/splits_compounds_04_v4.pkl", "rb") as f:
+    with open("./splits/splits_compounds_04_corrected_v4.pkl", "rb") as f:
         splits = pickle.load(f)
 
     try:
@@ -166,18 +167,18 @@ trials = Trials()
 import pickle
 def train_and_report_loss(param):
 
-    dataset = pd.read_pickle("dataset_no_stereo.pkl")
+    dataset = pd.read_pickle("dataset.pkl")
 
-    with open("./splits/splits_compounds_02_v4.pkl", "rb") as f:
+    with open("./splits/splits_0_8_proteins_train_val_test.pkl", "rb") as f:
         splits = pickle.load(f)
 
     try:
         for train_ids, val_ids, test_ids in splits:
 
             # Prepare training data
-            X_train, y_train = prepare_dataset(dataset, train_ids, random_seed=42, proteins=False)
+            X_train, y_train = prepare_dataset(dataset, train_ids, random_seed=42, proteins=True)
 
-            X_val, y_val = prepare_dataset(dataset, val_ids, random_seed=42, proteins=False)
+            X_val, y_val = prepare_dataset(dataset, val_ids, random_seed=42, proteins=True)
 
             # Train the model
             model = train_model(X_train, y_train, 42, param)
@@ -197,22 +198,22 @@ def train_and_report_loss(param):
         print("Error during training and evaluation:", e)
         return float('inf')
 
+if __name__ == "__main__":
+    for i in tqdm(range(1,2000)):
+        best = fmin(fn = train_and_report_loss, space = space_gradient_boosting,
+                    algo = rand.suggest, max_evals = i, trials = trials)
+        
+    import pickle
+    with open("splits_0_2_proteins_train_val_test_curated_changed.pkl", "wb") as f:
+        pickle.dump(best, f)
 
-for i in tqdm(range(1,2000)):
-    best = fmin(fn = train_and_report_loss, space = space_gradient_boosting,
-                algo = rand.suggest, max_evals = i, trials = trials)
-    
-import pickle
-with open("best_params_0_2_compounds.pkl", "wb") as f:
-    pickle.dump(best, f)
+    import pickle
+    with open("splits_0_2_proteins_train_val_test_curated_changed.pkl", "rb") as f:
+        best = pickle.load(f)
 
-import pickle
-with open("best_params_0_2_compounds.pkl", "rb") as f:
-    best = pickle.load(f)
+    dataset = pd.read_pickle("dataset_stereo.pkl")
 
-dataset = pd.read_pickle("dataset_no_stereo.pkl")
+    with open("./splits/splits_0_2_proteins_train_val_test_curated_changed.pkl", "rb") as f:
+        splits = pickle.load(f)
 
-with open("./splits/splits_compounds_02_v4.pkl", "rb") as f:
-    splits = pickle.load(f)
-
-train_and_evaluate(best, splits, dataset, name="results_esp_compounds_20_test.csv", proteins=False)
+    train_and_evaluate(best, splits, dataset, name="results_esp_proteins_20_test.csv", proteins=True)

@@ -47,6 +47,7 @@ def metabolite_preprocessing(metabolite_list):
     df_met = calculate_atom_and_bond_feature_vectors(df_met)
     # N_max = maximal_number_of_atoms(df_met = df_met)
     df_met = calculate_input_matrices(df_met = df_met, N_max = 70)
+    print(df_met.shape)
     df_met = get_substrate_representations(df = df_met, N_max = 70)
     shutil.rmtree(join("..", "data", "temp_met"))
     return(df_met)
@@ -91,9 +92,13 @@ def get_substrate_representations(df, N_max):
             XE = torch.tensor(np.array(XE), dtype = torch.float32).to(device)
             X = torch.tensor(np.array(X), dtype = torch.float32).to(device)
             A = torch.tensor(np.array(A), dtype = torch.float32).to(device)
-            representations = model.get_GNN_rep(XE, X,A,N_max).cpu().detach().numpy()
-            df["substrate_rep"][-len(representations):] = list(representations[:, :100])
-            break
+            try:
+                representations = model.get_GNN_rep(XE, X,A,N_max).cpu().detach().numpy()
+                df["substrate_rep"][-len(representations):] = list(representations[:, :100])
+                break
+            except:
+                pass
+            
         i += 1
     return(df)
 
@@ -308,7 +313,7 @@ def calculate_input_matrices(df_met, N_max):
         if df_met["successfull"][ind]:
             met_ID = df_met["ID"][ind]
             extras = np.array([df_met["MW"][ind], df_met["LogP"][ind]])
-            [XE, X, A] = create_input_data_for_GNN_for_substrates(substrate_ID = met_ID, N_max = N_max, print_error=True)
+            [XE, X, A] = create_input_data_for_GNN_for_substrates(substrate_ID = met_ID, N_max = N_max, print_error=False)
             if not A is None:
                 np.save(join(save_folder, met_ID + '_X.npy'), X) #feature matrix of atoms/nodes
                 np.save(join(save_folder, met_ID + '_XE.npy'), XE) #feature matrix of atoms/nodes and bonds/edges
